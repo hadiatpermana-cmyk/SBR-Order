@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SBR Putra Food - Order System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --p-color: #2c3e50; --s-color: #27ae60; --bg: #f4f7f9; }
+        body { font-family: 'Roboto', sans-serif; margin: 0; padding: 10px; background: var(--bg); color: #333; }
+        .container { background: white; padding: 15px; border-radius: 15px; max-width: 600px; margin: auto; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+        header { text-align: center; margin-bottom: 20px; }
+        header h2 { margin: 0; color: #1a202c; font-size: 20px; text-transform: uppercase; font-weight: 900; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+        .info-grid select, .info-grid input { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; box-sizing: border-box; outline: none; font-family: 'Roboto', sans-serif; }
+        .section-label { font-size: 12px; font-weight: 700; padding: 8px; background: #2d3748; color: white; border-radius: 5px; margin: 15px 0 5px; }
+        .table-scroll { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 400px; }
+        th { font-size: 11px; text-align: left; padding: 8px; background: #edf2f7; border-bottom: 2px solid #cbd5e0; font-weight: 700; }
+        td { padding: 6px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+        .qty-in { width: 35px; padding: 6px; text-align: center; border: 1px solid #ddd; border-radius: 5px; }
+        .input-manual { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 8px; font-weight: 700; text-align: right; box-sizing: border-box; margin-bottom: 8px; font-size: 14px; }
+        .summary-box { background: #f8fafc; padding: 15px; border-radius: 10px; margin-top: 15px; border: 1px solid #e2e8f0; }
+        .sum-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; }
+        .grand-total { border-top: 2px dashed #cbd5e0; margin-top: 10px; padding-top: 10px; font-weight: 900; color: #e53e3e; font-size: 18px; }
+        .btn-save { width: 100%; padding: 15px; background: var(--s-color); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 15px; }
+
+        /* PRINT STYLE SESUAI LAYOUT ASLI */
+        @media print {
+            @page { size: 210mm auto; margin: 0; }
+            body { background: white; padding: 0; margin: 0; }
+            .container { box-shadow: none; border: none; padding: 0; width: 100%; max-width: 100%; }
+            .no-print, .section-label, .table-scroll, .summary-box, header, #noticeTunggakan { display: none !important; }
+            .print-area { display: block !important; width: 85%; margin: 10mm auto; font-family: 'Roboto', sans-serif; }
+            .dashed { border-top: 3px dashed #000; margin: 10px 0; }
+            .p-brand-row { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px; }
+            .p-logo { width: 60px; height: 60px; border: 4px solid #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 30px; }
+            .p-title-big { font-weight: 900; font-size: 38px; }
+            .p-addr { text-align:center; font-size: 22px; margin-bottom: 15px; }
+            .p-row-wide { display: flex; justify-content: space-between; font-weight: 900; font-size: 26px; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 10px; }
+            .p-agen-title { font-size: 32px; font-weight: 900; text-align: center; text-transform: uppercase; margin: 10px 0; }
+            .p-drv-info { text-align: center; font-size: 24px; font-weight: 700; margin-bottom: 10px; }
+            .item-row { margin-bottom: 8px; border-bottom: 1px dashed #000; padding-bottom: 4px; }
+            .item-name { display: block; font-weight: 900; font-size: 26px; text-transform: uppercase; }
+            .item-line { display: flex; justify-content: space-between; font-weight: 700; font-size: 26px; }
+            .p-sum-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 900; border-bottom: 2px solid #000; font-size: 26px; padding-bottom: 4px; }
+            .p-grand { border-bottom: 6px double #000; font-size: 32px; padding-top: 5px; }
+            .sig-section { display: flex; justify-content: space-around; margin-top: 40px; text-align: center; font-weight: 900; font-size: 22px; }
+            .sig-box { width: 180px; padding-top: 70px; border-bottom: 3px solid #000; }
+            .footer-msg { text-align: center; margin-top: 40px; font-size: 22px; font-weight: 900; }
+        }
+        .print-area { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h2>SBR PUTRA FOOD</h2>
+        <p>Lembang, Bandung Barat</p>
+    </header>
+
+    <div class="info-grid no-print">
+        <input type="text" id="noNota" readonly>
+        <input type="date" id="tglNota">
+        <select id="pilihAgen" onchange="updateBon()"><option value="">-- Agen --</option></select>
+        <select id="driver1"><option value="">-- Driver 1 --</option></select>
+        <select id="pilihMobil"><option value="">-- Mobil --</option></select>
+        <select id="driver2"><option value="">-- Driver 2 --</option></select>
+    </div>
+
+    <div id="noticeTunggakan" style="display:none; background:#fee2e2; color:#b91c1c; padding:12px; border-radius:8px; border:1px solid #f87171; margin-bottom:15px; font-weight:900; text-align:center;"></div>
+
+    <div class="no-print">
+        <div class="section-label">DIKIRIM :</div>
+        <div class="table-scroll"><table id="tabelKirim"><thead><tr><th width="35">Qty</th><th>Barang</th><th width="50">Sat</th><th width="100">Total</th></tr></thead><tbody></tbody></table></div>
+        
+        <div class="section-label">RETUR :</div>
+        <div class="table-scroll"><table id="tabelRetur"><thead><tr><th width="35">Qty</th><th>Barang</th><th width="50">Sat</th><th width="100">Total</th></tr></thead><tbody></tbody></table></div>
+        
+        <div class="section-label">PEMBAYARAN :</div>
+        <input type="text" id="inputCash" class="input-manual" placeholder="BAYAR CASH" oninput="formatRupiah(this); hitungTotal()">
+        <input type="text" id="inputTrf" class="input-manual" placeholder="BAYAR TRANSFER" oninput="formatRupiah(this); hitungTotal()">
+        <input type="text" id="inputBonLama" class="input-manual" readonly style="background:#fef3c7;" placeholder="SISA BON LAMA">
+    </div>
+
+    <div class="summary-box">
+        <div class="sum-row"><span>Total Kirim:</span><span id="txtKirim">Rp 0</span></div>
+        <div class="sum-row"><span>Total Retur:</span><span id="txtRetur">Rp 0</span></div>
+        <div class="sum-row grand-total"><span>SISA BON AKHIR:</span><span id="txtGrand">Rp 0</span></div>
+    </div>
+
+    <button class="btn-save no-print" onclick="simpanDanOtomatisPrint()">SIMPAN & PRINT</button>
+
+    <div class="print-area">
+        <div class="p-brand-row"><div class="p-logo">SBR</div><div class="p-title-big">SBR PUTRA FOOD</div></div>
+        <div class="p-addr">Lembang, Bandung Barat</div>
+        <div class="dashed"></div>
+        <div class="p-row-wide"><span>NO: <span id="p-nota"></span></span> <span>TGL: <span id="p-tgl"></span></span></div>
+        <div id="p-agen" class="p-agen-title"></div>
+        <div id="p-drv" class="p-drv-info"></div>
+        <div class="dashed"></div>
+        <div id="print-items-kirim"></div>
+        <div id="print-items-retur"></div>
+        <div class="dashed"></div>
+        <div class="print-summary">
+            <div class="p-sum-row"><span>Total Kirim:</span><span id="p-tk"></span></div>
+            <div class="p-sum-row"><span>Total Retur:</span><span id="p-tr"></span></div>
+            <div class="p-sum-row"><span>Sisa Bon Lama:</span><span id="p-sb"></span></div>
+            <div class="p-sum-row"><span>Bayar Cash:</span><span id="p-bc"></span></div>
+            <div class="p-sum-row"><span>Bayar Transfer:</span><span id="p-bt"></span></div>
+            <div class="p-sum-row p-grand"><span>SISA BON AKHIR:</span><span id="p-gt"></span></div>
+        </div>
+        <div class="sig-section">
+            <div>PENERIMA<div class="sig-box"></div></div>
+            <div>HORMAT KAMI<div class="sig-box"></div></div>
+        </div>
+        <div class="footer-msg">*** TERIMA KASIH ***</div>
+    </div>
+</div>
+
+<script>
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbzIP43zcvAN6K8j70nAnTCoWkzGBj2MgUY4F7szlWtU-MQjQbYyJJj0rssIW5G2JQYH/exec"; 
+    let database = { harga: {}, barang: [], karyawan: [], kendaraan: [], agenData: {} };
+
+    async function init() {
+        try {
+            const r = await fetch(webAppUrl);
+            const d = await r.json();
+            database.barang = d.barang.map(x => x[1]);
+            database.karyawan = d.karyawan.map(x => x[0]);
+            database.kendaraan = d.kendaraan.map(x => x[0]);
+            
+            const sAgen = document.getElementById('pilihAgen');
+           d.agen.forEach(x => { 
+    sAgen.options.add(new Option(x[0], x[0])); 
+    // x[3] merujuk pada Kolom D (Bon sisa)
+    database.agenData[x[0]] = { "bon": parseFloat(x[3]) || 0 }; 
+});
+
+            d.harga.forEach(x => { 
+                if(!database.harga[x[0]]) database.harga[x[0]] = {}; 
+                database.harga[x[0]][`${x[1]}_${x[2]}`] = x[3]; 
+            });
+
+            database.karyawan.forEach(x => { 
+                document.getElementById('driver1').options.add(new Option(x,x)); 
+                document.getElementById('driver2').options.add(new Option(x,x)); 
+            });
+            database.kendaraan.forEach(x => document.getElementById('pilihMobil').options.add(new Option(x,x)));
+            
+            const skrg = new Date(); document.getElementById('tglNota').valueAsDate = skrg;
+            document.getElementById('noNota').value = "SBR-" + skrg.getTime().toString().slice(-6);
+            tambahBaris('tabelKirim'); tambahBaris('tabelRetur');
+        } catch(e) { console.error(e); }
+    }
+
+    function updateBon() {
+        const ag = document.getElementById('pilihAgen').value;
+        const notice = document.getElementById('noticeTunggakan');
+        const bon = database.agenData[ag]?.bon || 0;
+        
+        document.getElementById('inputBonLama').value = bon.toLocaleString('id-ID');
+        
+        if (bon > 0) {
+            notice.style.display = "block";
+            notice.innerHTML = `⚠️ PERHATIAN: ${ag.toUpperCase()} ADA SISA BON Rp ${bon.toLocaleString('id-ID')}`;
+        } else {
+            notice.style.display = "none";
+        }
+        hitungTotal();
+    }
+
+    function hitungTotal() {
+        const agen = document.getElementById('pilihAgen').value;
+        let tk = 0, tr = 0;
+        const hitung = (tId) => {
+            let total = 0;
+            document.querySelectorAll(`#${tId} tbody tr`).forEach(r => {
+                const q = parseFloat(r.cells[0].querySelector('input').value) || 0;
+                const b = r.cells[1].querySelector('select').value;
+                const s = r.cells[2].querySelector('select').value;
+                const h = database.harga[agen]?.[`${b}_${s}`] || 0;
+                const jml = q * h;
+                r.cells[3].querySelector('input').value = jml.toLocaleString('id-ID');
+                total += jml;
+            });
+            return total;
+        };
+        tk = hitung('tabelKirim'); tr = hitung('tabelRetur');
+        const bl = getAngka('inputBonLama'), cs = getAngka('inputCash'), tf = getAngka('inputTrf');
+        document.getElementById('txtKirim').innerText = "Rp " + tk.toLocaleString('id-ID');
+        document.getElementById('txtRetur').innerText = "Rp " + tr.toLocaleString('id-ID');
+        const sisa = (tk - tr + bl) - (cs + tf);
+        document.getElementById('txtGrand').innerText = "Rp " + sisa.toLocaleString('id-ID');
+    }
+
+    function formatRupiah(el) {
+        let val = el.value.replace(/[^0-9]/g, '');
+        el.value = val === "" ? "" : Number(val).toLocaleString('id-ID');
+    }
+
+    function getAngka(id) {
+        let val = document.getElementById(id).value.replace(/[^0-9]/g, '');
+        return parseFloat(val) || 0;
+    }
+
+    function tambahBaris(id) {
+        const tb = document.getElementById(id).querySelector('tbody');
+        const r = tb.insertRow();
+        r.innerHTML = `
+            <td><input type="number" class="qty-in" value="0" oninput="hitungTotal()"></td>
+            <td><select onchange="if(this.value!='') tambahBaris('${id}'); hitungTotal();" style="width:100%;"><option value="">--Pilih--</option>${database.barang.map(b=>`<option>${b}</option>`).join('')}</select></td>
+            <td><select onchange="hitungTotal()"><option>Ball</option><option>Pack</option><option>Pcs</option></select></td>
+            <td><input type="text" readonly style="width:100%; border:none; background:transparent; text-align:right;" value="0"></td>
+        `;
+    }
+
+    async function simpanDanOtomatisPrint() {
+        const btn = document.querySelector('.btn-save');
+        const agen = document.getElementById('pilihAgen').value;
+        if (!agen) { alert("Pilih Agen!"); return; }
+        
+        const nCash = getAngka('inputCash'), nTrf = getAngka('inputTrf'), nBon = getAngka('inputBonLama');
+        const d1 = document.getElementById('driver1').value;
+        const d2 = document.getElementById('driver2').value;
+        const mbl = document.getElementById('pilihMobil').value;
+        
+        const items = [];
+        const ambil = (tId, tipe) => {
+            document.querySelectorAll(`#${tId} tbody tr`).forEach(r => {
+                const q = parseFloat(r.cells[0].querySelector('input').value) || 0;
+                const b = r.cells[1].querySelector('select').value;
+                const s = r.cells[2].querySelector('select').value;
+                if (q > 0 && b !== "") items.push({ tipe: tipe, nama: b, qty: q, satuan: s });
+            });
+        };
+        ambil('tabelKirim', 'Kirim'); ambil('tabelRetur', 'Retur');
+        if (items.length === 0) { alert("Isi barang!"); return; }
+
+        const payload = {
+            noNota: document.getElementById('noNota').value, tanggal: document.getElementById('tglNota').value,
+            agen: agen, driver1: d1, driver2: d2, mobil: mbl, 
+            totalKirim: document.getElementById('txtKirim').innerText,
+            totalRetur: document.getElementById('txtRetur').innerText, sisaBonLama: nBon, bayarCash: nCash,
+            bayarTrf: nTrf, grandTotal: document.getElementById('txtGrand').innerText, items: items 
+        };
+
+        try {
+            btn.innerText = "MENYIMPAN..."; btn.disabled = true;
+            const r = await fetch(webAppUrl, { method: "POST", body: JSON.stringify(payload) });
+            const h = await r.json();
+            if (h.result === "success") {
+                document.getElementById('p-nota').innerText = payload.noNota;
+                document.getElementById('p-tgl').innerText = payload.tanggal.split('-').reverse().join('/');
+                document.getElementById('p-agen').innerText = payload.agen;
+                document.getElementById('p-drv').innerText = `DRV: ${d1}${d2 ? ' & '+d2 : ''} [${mbl}]`;
+                document.getElementById('p-sb').innerText = "Rp " + nBon.toLocaleString('id-ID');
+                document.getElementById('p-bc').innerText = "Rp " + nCash.toLocaleString('id-ID');
+                document.getElementById('p-bt').innerText = "Rp " + nTrf.toLocaleString('id-ID');
+                
+                let hK="", hR="";
+                items.forEach(it => {
+                    const hrg = database.harga[agen]?.[`${it.nama}_${it.satuan}`] || 0;
+                    const tot = it.qty * hrg;
+                    const row = `<div class="item-row"><span class="item-name">${it.tipe=='Retur'?'[R] ':''}${it.nama}</span><div class="item-line"><span>${it.qty} ${it.satuan} x ${hrg.toLocaleString('id-ID')}</span><span>${tot.toLocaleString('id-ID')}</span></div></div>`;
+                    if(it.tipe=='Kirim') hK+=row; else hR+=row;
+                });
+                document.getElementById('print-items-kirim').innerHTML = hK;
+                document.getElementById('print-items-retur').innerHTML = hR;
+                document.getElementById('p-tk').innerText = payload.totalKirim;
+                document.getElementById('p-tr').innerText = payload.totalRetur;
+                document.getElementById('p-gt').innerText = payload.grandTotal;
+                
+                window.print(); 
+                location.reload();
+            }
+        } catch (e) { alert("Error Koneksi!"); } finally { btn.disabled = false; }
+    }
+    window.onload = init;
+</script>
+</body>
+</html>
